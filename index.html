@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TikTok Public Lookup</title>
+  <style>
+    body { font-family: Arial; background:#0f0f0f; color:white; text-align:center; }
+    input { padding:10px; width:250px; }
+    button { padding:10px; cursor:pointer; }
+    .card { margin-top:20px; background:#1c1c1c; padding:20px; border-radius:10px; }
+  </style>
+</head>
+<body>
+
+<h1>📊 TikTok Public Info</h1>
+
+<input id="username" placeholder="username (sans @)">
+<button onclick="lookup()">Lookup</button>
+
+<div id="result"></div>
+
+<script>
+async function lookup() {
+  const user = document.getElementById("username").value;
+  const result = document.getElementById("result");
+  result.innerHTML = "⏳ Loading...";
+
+  try {
+    const res = await fetch(
+      "https://tiktok-scraper-proxy.vercel.app/user?username=" + user
+    );
+    const data = await res.json();
+
+    result.innerHTML = `
+      <div class="card">
+        <h2>@${data.username}</h2>
+        <p>${data.bio}</p>
+        <p>🌍 Country: ${data.country || "Not public"}</p>
+        <p>👥 Followers: ${data.followers}</p>
+        <p>➡️ Following: ${data.following}</p>
+        <p>🔗 Link: <a href="${data.link}" target="_blank">${data.link}</a></p>
+      </div>
+    `;
+  } catch (e) {
+    result.innerHTML = "❌ User not found or error";
+  }
+}
+</script>
+
+</body>
+</html>
