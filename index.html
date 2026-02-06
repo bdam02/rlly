@@ -11,7 +11,7 @@
   body {
     margin: 0;
     font-family: 'Share Tech Mono', monospace;
-    background: #0b0b0b;
+    background: linear-gradient(135deg,#0b0b0b,#1a1a1a);
     color: #00ffcc;
     display: flex;
     justify-content: center;
@@ -22,76 +22,82 @@
 
   /* ---------------- CONTAINER ---------------- */
   .container {
-    background: #101010;
-    border: 1px solid #00ffcc;
-    border-radius: 15px;
+    background: rgba(20,20,20,0.3);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(0,255,204,0.5);
+    border-radius: 20px;
     padding: 30px 25px;
-    width: 350px;
+    width: 380px;
     text-align: center;
-    box-shadow: 0 0 20px #00ffcc50;
+    box-shadow: 0 0 40px rgba(0,255,204,0.3);
     animation: fadeIn 0.8s ease-in-out;
   }
 
   h1 {
-    font-size: 24px;
+    font-size: 26px;
     margin-bottom: 20px;
     color: #00ffc3;
-    text-shadow: 0 0 8px #00ffcc;
+    text-shadow: 0 0 10px #00ffcc;
   }
 
   input {
     width: 80%;
     padding: 12px;
     margin-bottom: 15px;
-    border-radius: 8px;
-    border: none;
+    border-radius: 12px;
+    border: 1px solid rgba(0,255,204,0.5);
     outline: none;
     font-family: 'Share Tech Mono', monospace;
-    background: #1a1a1a;
+    background: rgba(30,30,30,0.5);
     color: #00ffcc;
     text-align: center;
+    transition: 0.3s;
   }
 
-  input::placeholder {
-    color: #00ff99aa;
+  input:focus {
+    border-color: #00ffcc;
+    box-shadow: 0 0 15px #00ffcc50;
   }
 
-  button {
-    padding: 12px 25px;
+  /* ---------------- BUTTONS ---------------- */
+  .btn {
+    padding: 12px 20px;
+    border-radius: 12px;
     border: none;
-    border-radius: 8px;
-    background: #00ffcc;
+    background: linear-gradient(90deg,#00ffcc,#00ffaa);
     color: #0b0b0b;
     font-weight: bold;
     cursor: pointer;
-    transition: all 0.3s ease;
     font-family: 'Share Tech Mono', monospace;
+    margin: 5px 5px 0 5px;
+    transition: 0.3s;
   }
 
-  button:hover {
+  .btn:hover {
     box-shadow: 0 0 15px #00ffcc, 0 0 30px #00ffcc50;
     transform: scale(1.05);
   }
 
   /* ---------------- RESULT CARD ---------------- */
   .card {
-    background: #121212;
-    border: 1px solid #00ffcc30;
-    border-radius: 12px;
+    background: rgba(25,25,25,0.4);
+    border: 1px solid rgba(0,255,204,0.5);
+    border-radius: 15px;
     padding: 20px;
     margin-top: 20px;
     text-align: left;
     animation: slideUp 0.5s ease-out;
+    backdrop-filter: blur(10px);
   }
 
   .card h2 {
     margin: 0;
-    font-size: 20px;
+    font-size: 22px;
     color: #00ffc3;
   }
 
   .card p, .card a {
-    margin: 6px 0;
+    margin: 5px 0;
     color: #00ffccaa;
     word-break: break-word;
     font-size: 14px;
@@ -137,11 +143,17 @@
   <h1>💻 TikTok Public OSINT Lookup</h1>
   <input id="username" placeholder="Enter TikTok username" />
   <br>
-  <button onclick="lookup()">Lookup</button>
+  <button class="btn" onclick="lookup()">Lookup</button>
+  <button class="btn" onclick="copyUsername()">Copy Username</button>
+  <button class="btn" onclick="refreshInfo()">Refresh Info</button>
+  <button class="btn" onclick="openProfile()">Open Profile</button>
   <div id="result"></div>
 </div>
 
 <script>
+let lastData = null;
+let lastUsername = null;
+
 async function lookup() {
   const username = document.getElementById("username").value.trim();
   const result = document.getElementById("result");
@@ -152,32 +164,68 @@ async function lookup() {
   }
 
   result.innerHTML = '<p class="loading">⏳ Fetching public info...</p>';
+  lastUsername = username;
 
   try {
-    // --- REPLACE THIS URL WITH YOUR OWN PROXY IF NEEDED ---
+    // ---- PROXY REQUIRED ----
+    // Replace this URL with your own proxy if needed
     const res = await fetch(`https://tiktok-scraper-proxy.vercel.app/user?username=${username}`);
     if (!res.ok) throw new Error("User not found");
-    const data = await res.json();
 
+    const data = await res.json();
     if(!data.username) throw new Error("User not found");
 
-    result.innerHTML = `
-      <div class="card">
-        <h2>@${data.username}</h2>
-        <p>💬 Bio: ${data.bio || "Not public"}</p>
-        <p>🌍 Country: ${data.country || "Not public"}</p>
-        <p>👥 Followers: ${data.followers || 0}</p>
-        <p>➡️ Following: ${data.following || 0}</p>
-        ${data.link ? `<p>🔗 Link: <a href="${data.link}" target="_blank">${data.link}</a></p>` : ''}
-      </div>
-    `;
+    lastData = data;
+
+    displayData(data);
   } catch (err) {
     result.innerHTML = '<p class="loading">❌ User not found</p>';
+    lastData = null;
+  }
+}
+
+function displayData(data) {
+  const result = document.getElementById("result");
+  result.innerHTML = `
+    <div class="card">
+      <h2>@${data.username}</h2>
+      <p>💬 Bio: ${data.bio || "Not public"}</p>
+      <p>🌍 Country: ${data.country || "Not public"}</p>
+      <p>👥 Followers: ${data.followers || 0}</p>
+      <p>➡️ Following: ${data.following || 0}</p>
+      ${data.link ? `<p>🔗 Link: <a href="${data.link}" target="_blank">${data.link}</a></p>` : ''}
+    </div>
+  `;
+}
+
+// -------- EXTRA BUTTON FUNCTIONS --------
+function copyUsername() {
+  if(lastData) {
+    navigator.clipboard.writeText(lastData.username);
+    alert("Username copied: " + lastData.username);
+  } else {
+    alert("No data to copy.");
+  }
+}
+
+function refreshInfo() {
+  if(lastUsername) {
+    lookup();
+  } else {
+    alert("No username entered.");
+  }
+}
+
+function openProfile() {
+  if(lastData) {
+    window.open("https://www.tiktok.com/@" + lastData.username, "_blank");
+  } else {
+    alert("No profile to open.");
   }
 }
 </script>
-
 </body>
 </html>
+
 
 
